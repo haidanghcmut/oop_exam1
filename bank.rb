@@ -39,13 +39,13 @@ class ATM
         card_number_enter = gets.chomp
         puts 'Please enter your password:'
         password_enter = gets.chomp
-        @current_account = @accounts.find { |account| account.card_number == card_number_enter && account.password == password_enter }
+        @current_account = @accounts.find { |accountt| accountt[:card_number] == card_number_enter.to_i || accountt[:password]== password_enter.to_i }
         if @current_account.nil?
             puts 'Invalid card number or password. Please try again.'
             login
-        else
-            puts "Welcome, #{current_account.owner}!"
-            puts "Your balance: $#{current_account.balance}"
+        elsif(@current_account[:card_number] == card_number_enter.to_i && @current_account[:password] == password_enter.to_i)
+            puts "Welcome, #{@current_account.owner}!"
+            puts "Your balance: $#{@current_account.balance}"
         end
     end
 
@@ -86,19 +86,21 @@ class ATM
             puts 'Insufficient funds.'
         else
             @current_account.balance -= amount
-            puts "Your new balance is $#{current_account.balance}"
+            save_accounts_to_csv
+            puts "Your new balance is $#{@current_account.balance}"
         end
     end
 
     def check_balance
-        puts "Your balance is $#{current_account.balance}"
+        puts "Your balance is $#{@current_account.balance}"
     end
 
     def deposit
         puts 'How much would you like to deposit?'
         amount = gets.chomp.to_i
         @current_account.balance += amount
-        puts "Your new balance is $#{current_account.balance}"
+        save_accounts_to_csv
+        puts "Your new balance is $#{@current_account.balance}"
     end
 
     def transfer
@@ -130,13 +132,16 @@ class ATM
     def load_accounts_from_csv
         accountt = []
         if (File.file?('./accounts.csv') && !File.zero?('./accounts.csv'))
-            CSV.foreach('./accounts.csv') do |row|
-                owner = row[0]
-                balance = row[1].to_i
-                card_number = row[2]
-                password = row[3]
-                accountt << User.new(owner, balance, card_number, password)
+            CSV.foreach('./accounts.csv', headers: true) do |row|
+                owner = row['owner']
+                balance = row['balance'].to_i
+                card_number = row['card_number'].to_i
+                password = row['password'].to_i
+
+                account = { owner: owner, balance: balance, card_number: card_number, password: password }
+                accountt << account
             end
+            return accountt
         else 
             File.new("./accounts.csv", 'w')   
         end
@@ -145,7 +150,7 @@ class ATM
     def save_accounts_to_csv
         CSV.open('accounts.csv', 'w') do |csv|
           @accounts.each do |account|
-            csv << [account.card_number, account.password, account.owner, account.balance]
+            csv << [account.owner, account.balance, account.card_number, account.password]
           end
     end
    end
