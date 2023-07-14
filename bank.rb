@@ -39,11 +39,13 @@ class ATM
         card_number_enter = gets.chomp
         puts 'Please enter your password:'
         password_enter = gets.chomp
-        @current_account = @accounts.find { |accountt| accountt[:card_number] == card_number_enter.to_i || accountt[:password]== password_enter.to_i }
+        @curr = []
+        @curr.push(card_number_enter, password_enter)
+        @current_account = @accounts.find { |accountt| accountt.card_number == card_number_enter.to_i || accountt.password == password_enter.to_i }
         if @current_account.nil?
             puts 'Invalid card number or password. Please try again.'
             login
-        elsif(@current_account[:card_number] == card_number_enter.to_i && @current_account[:password] == password_enter.to_i)
+        elsif(@curr[0] == @current_account.card_number && @curr[1] == @current_account.password)
             puts "Welcome, #{@current_account.owner}!"
             puts "Your balance: $#{@current_account.balance}"
         end
@@ -85,7 +87,7 @@ class ATM
         if amount > @current_account.balance
             puts 'Insufficient funds.'
         else
-            @current_account.balance -= amount
+            @current_account[:balance] -= amount
             save_accounts_to_csv
             puts "Your new balance is $#{@current_account.balance}"
         end
@@ -116,13 +118,13 @@ class ATM
     
 
     def transfer_to_another_account
-    puts 'Enter the account number to transfer to:'
-    account_number = gets.chomp
-    recipient_account = @accounts.find { |account| account.card_number == account_number }
-    if recipient_account.nil?
-      puts 'Invalid account number.'
-      return 
-    end
+            puts 'Enter the account number to transfer to:'
+            account_number = gets.chomp
+            recipient_account = @accounts.find { |account| account.card_number == account_number }
+            if recipient_account.nil?
+                puts 'Invalid account number.'
+                return 
+            end
     end
 
     def log_out
@@ -132,14 +134,12 @@ class ATM
     def load_accounts_from_csv
         accountt = []
         if (File.file?('./accounts.csv') && !File.zero?('./accounts.csv'))
-            CSV.foreach('./accounts.csv', headers: true) do |row|
-                owner = row['owner']
-                balance = row['balance'].to_i
-                card_number = row['card_number'].to_i
-                password = row['password'].to_i
-
-                account = { owner: owner, balance: balance, card_number: card_number, password: password }
-                accountt << account
+            CSV.foreach('./accounts.csv', 'r') do |row|
+                    owner = row[0]
+                    balance = row[1].to_i
+                    card_number = row[2]
+                    password = row[3]
+                    accountt << User.new(owner, balance, card_number, password)
             end
             return accountt
         else 
